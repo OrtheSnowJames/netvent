@@ -275,6 +275,92 @@ void test_trailing_commas() {
     assert(nested_data[1].as_table()[Value("b")].as_int() == 2);
 }
 
+void test_hassle_free_api() {
+    // test basic Value construction
+    Value valu = 5;
+    Value flt = 5.0f;
+    Value strng = "five";
+    Value bl = true;
+    
+    assert(valu.is_int() && valu.as_int() == 5);
+    assert(flt.is_float() && flt.as_float() == 5.0f);
+    assert(strng.is_string() && strng.as_string() == "five");
+    assert(bl.is_bool() && bl.as_bool() == true);
+
+    // test simple array creation and serialization
+    auto simple_array = arr_table({1, 2, 3, 4});
+    assert(to_string(simple_array) == "[1,2,3,4]");
+    
+    // test simple map creation
+    auto simple_map = map_table({
+        {"x", 10},
+        {"y", 20},
+        {"name", "test"}
+    });
+    assert(simple_map["x"].as_int() == 10);
+    assert(simple_map["y"].as_int() == 20);
+    assert(simple_map["name"].as_string() == "test");
+    
+    // test complex nested structure
+    auto game_state = map_table({
+        {"player", map_table({
+            {"name", "John"},
+            {"position", arr_table({10, 20})},
+            {"health", 100},
+            {"inventory", arr_table({
+                map_table({{"item", "sword"}, {"damage", 15}}),
+                map_table({{"item", "potion"}, {"healing", 20}})
+            })}
+        })},
+        {"level", 1},
+        {"enemies", arr_table({
+            map_table({{"type", "goblin"}, {"health", 50}}),
+            map_table({{"type", "orc"}, {"health", 100}})
+        })}
+    });
+    
+    // test serialization and deserialization roundtrip
+    std::string serialized = to_string(game_state);
+    Value deserialized = from_string(serialized);
+    
+    // verify the complex structure was preserved
+    assert(deserialized.is_table());
+    auto& player = deserialized.as_table()["player"].as_table();
+    assert(player["name"].as_string() == "John");
+    assert(player["health"].as_int() == 100);
+    
+    // check position array
+    auto position_table = player["position"].as_table();
+    auto position = position_table.get_data_vector();
+    assert(position.size() == 2);
+    assert(position[0].as_int() == 10);
+    assert(position[1].as_int() == 20);
+    
+    // check inventory
+    auto inventory_table = player["inventory"].as_table();
+    auto inventory = inventory_table.get_data_vector();
+    assert(inventory.size() == 2);
+    assert(inventory[0].as_table()["item"].as_string() == "sword");
+    assert(inventory[0].as_table()["damage"].as_int() == 15);
+    assert(inventory[1].as_table()["item"].as_string() == "potion");
+    assert(inventory[1].as_table()["healing"].as_int() == 20);
+    
+    // check enemies
+    auto enemies_table = deserialized.as_table()["enemies"].as_table();
+    auto enemies = enemies_table.get_data_vector();
+    assert(enemies.size() == 2);
+    assert(enemies[0].as_table()["type"].as_string() == "goblin");
+    assert(enemies[0].as_table()["health"].as_int() == 50);
+    assert(enemies[1].as_table()["type"].as_string() == "orc");
+    assert(enemies[1].as_table()["health"].as_int() == 100);
+    
+    // test val helper with different types
+    assert(val(42).is_int());
+    assert(val(3.14f).is_float());
+    assert(val("hello").is_string());
+    assert(val(true).is_bool());
+}
+
 int main() {
     test_simple_array();
     test_nested_structure();
@@ -285,6 +371,7 @@ int main() {
     test_array_of_objects();
     test_deeply_nested();
     test_trailing_commas();
+    test_hassle_free_api();
     std::cout << "All tests passed!" << std::endl;
     return 0;
 } 

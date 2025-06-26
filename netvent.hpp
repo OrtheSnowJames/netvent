@@ -31,7 +31,8 @@ class Value {
         Value(bool v) : data(v) {}
         Value(const char* v) : data(std::string(v)) {}
         Value(const std::string& v) : data(v) {}
-        Value(const Table& v);
+        Value(const Table& v) : data(std::make_shared<Table>(v)) {}
+        Value(const std::shared_ptr<Table>& v) : data(v) {}
 
         // type checkers
         bool is_int() const { return std::holds_alternative<int>(data); }
@@ -45,8 +46,9 @@ class Value {
         float as_float() const { return std::get<float>(data); }
         bool as_bool() const { return std::get<bool>(data); }
         std::string as_string() const { return std::get<std::string>(data); }
-        const Table& as_table() const;
-        Table& as_table();
+        const Table& as_table() const { return *std::get<std::shared_ptr<Table>>(data); }
+        Table& as_table() { return *std::get<std::shared_ptr<Table>>(data); }
+
 
         // comparison operators
         friend bool operator<(const Value& lhs, const Value& rhs);
@@ -71,6 +73,19 @@ class Table {
             }
             is_array = true;
         }
+        Table(std::initializer_list<std::pair<Value, Value>> init) : data(init.begin(), init.end()) {}
+        Table(std::initializer_list<Value> init) : data() {
+            size_t i = 0;
+            for (const auto& v : init) {
+                data[Value(static_cast<int>(i++))] = v;
+            }
+            is_array = true;
+        }
+        Table(std::initializer_list<std::pair<const char*, Value>> init) {
+            for (const auto& [key, value] : init) {
+                data[Value(key)] = value;
+            }
+        }
         Value& operator[](const Value& key) {
             return data[key];
         }
@@ -85,19 +100,32 @@ class Table {
             }
             return data;
         }
+
+        std::map<Value, Value> get_data_map() const {
+            if (!is_array) {
+                std::map<Value, Value> map;
+                for (const auto& pair : data) {
+                    map[pair.first] = pair.second;
+                }
+                return map;
+            }
+            throw std::runtime_error("Table is not a map");
+        }
+
+        std::vector<Value> get_data_vector() const {
+            if (is_array) {
+                std::vector<Value> vec;
+                for (const auto& pair : data) {
+                    vec.push_back(pair.second);
+                }
+                return vec;
+            }
+            throw std::runtime_error("Table is not an array");
+        }
+
         std::string serialize() const;
         static Table deserialize(const std::string& data);
     };
-
-inline Value::Value(const Table& v) : data(std::make_shared<Table>(v)) {}
-
-inline const Table& Value::as_table() const { 
-    return *std::get<std::shared_ptr<Table>>(data); 
-}
-
-inline Table& Value::as_table() { 
-    return *std::get<std::shared_ptr<Table>>(data); 
-}
 
 inline std::string Value::serialize() const {
     std::stringstream ss;
@@ -392,5 +420,44 @@ inline std::pair<Value, std::map<std::string, Value>> deserialize_from_netvent(s
 
     return std::make_pair(event_name, result);
 }
+
+inline std::string to_string(const Value& value) {
+    return value.serialize();
+}
+
+inline std::string to_string(const Table& table) {
+    return table.serialize();
+}
+
+inline Value from_string(const std::string& str) {
+    return Value::deserialize(str);
+}
+
+template<typename T>
+inline Value val(T&& v) {
+    return Value(std::forward<T>(v));
+}
+
+// Shorthand for creating tables
+inline Table arr_table(std::initializer_list<Value> init) {
+    return Table(init);
+}
+
+inline Table map_table(std::initializer_list<std::pair<const char*, Value>> init) {
+    return Table(init);
+}
+
+// example usage:
+// auto player = map_table({
+//     {"name", "John"},
+//     {"position", arr_table({10, 20})},
+//     {"health", 100},
+//     {"inventory", arr_table({
+//         map_table({{"item", "sword"}, {"damage", 15}}),
+//         map_table({{"item", "potion"}, {"healing", 20}})
+//     })}
+// });
+// std::string data = to_string(player);
+// Value restored = from_string(data);
 
 } // namespace netvent
