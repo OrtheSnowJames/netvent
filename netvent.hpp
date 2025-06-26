@@ -10,11 +10,10 @@
 
 namespace netvent {
 
-// Forward declarations
 class Table;
 class Value;
 
-// Comparison operators declaration
+// comparison operators
 bool operator<(const Value& lhs, const Value& rhs);
 bool operator==(const Value& lhs, const Value& rhs);
 
@@ -23,10 +22,10 @@ class Value {
         std::variant<int, float, bool, std::string, std::shared_ptr<Table>> data;
 
     public:
-        // Default constructor creates null value
+        // creates a null value (0)
         Value() : data(0) {}
         
-        // Constructors for different types
+        // constructors for different types
         Value(int v) : data(v) {}
         Value(float v) : data(v) {}
         Value(bool v) : data(v) {}
@@ -34,14 +33,14 @@ class Value {
         Value(const std::string& v) : data(v) {}
         Value(const Table& v);
 
-        // Type checking
+        // type checkers
         bool is_int() const { return std::holds_alternative<int>(data); }
         bool is_float() const { return std::holds_alternative<float>(data); }
         bool is_bool() const { return std::holds_alternative<bool>(data); }
         bool is_string() const { return std::holds_alternative<std::string>(data); }
         bool is_table() const { return std::holds_alternative<std::shared_ptr<Table>>(data); }
 
-        // Getters
+        // getters
         int as_int() const { return std::get<int>(data); }
         float as_float() const { return std::get<float>(data); }
         bool as_bool() const { return std::get<bool>(data); }
@@ -49,11 +48,11 @@ class Value {
         const Table& as_table() const;
         Table& as_table();
 
-        // Comparison
+        // comparison operators
         friend bool operator<(const Value& lhs, const Value& rhs);
         friend bool operator==(const Value& lhs, const Value& rhs);
 
-        // Serialization
+        // serialize and deserialize
         std::string serialize() const;
         static Value deserialize(const std::string& data);
     };
@@ -119,7 +118,7 @@ inline std::string Value::serialize() const {
 inline Value Value::deserialize(const std::string& data) {
     if (data.empty()) throw std::runtime_error("Empty data");
 
-    // Try to parse as number first
+    // test if it's a number
     try {
         if (data.find('.') != std::string::npos) {
             return Value(std::stof(data));
@@ -128,25 +127,25 @@ inline Value Value::deserialize(const std::string& data) {
         }
     } catch (...) {}
 
-    // Try to parse as bool
+    // test if it's a bool
     if (data == "true") return Value(true);
     if (data == "false") return Value(false);
 
-    // Handle quoted strings
+    // test if it's a string (quoted)
     if (data.length() >= 2 && data[0] == '"' && data.back() == '"') {
         return Value(data.substr(1, data.length() - 2));
     }
     
-    // If it's a table format
+    // test if it's a table
     if (data[0] == '[' || data[0] == '{') {
         return Value(Table::deserialize(data));
     }
 
-    // Default to treating as string
+    // default to string
     return Value(data);
 }
 
-// Implementation of Table's serialization methods
+// serialize the table
 inline std::string Table::serialize() const {
     if (is_array) {
         std::stringstream ss;
@@ -179,7 +178,7 @@ inline Table Table::deserialize(const std::string& data) {
         if (data.length() < 2 || data.back() != ']') 
             throw std::runtime_error("Malformed array");
             
-        if (data.length() == 2) // empty array "[]"
+        if (data.length() == 2) // empty array == "[]"
             return Table(std::vector<Value>());
             
         std::vector<Value> vec;
@@ -207,7 +206,7 @@ inline Table Table::deserialize(const std::string& data) {
         }
         
         item = content.substr(pos);
-        // only add final item if it's not empty
+        // only add final item if it's not empty (for trailing commas)
         if (!item.empty()) {
             // get rid of whitespace
             item.erase(0, item.find_first_not_of(" \t"));
@@ -303,7 +302,7 @@ inline bool operator<(const Value& lhs, const Value& rhs) {
     if (lhs.is_string())
         return lhs.as_string() < rhs.as_string();
     if (lhs.is_table())
-        return &lhs.as_table() < &rhs.as_table(); // Compare pointers for tables
+        return &lhs.as_table() < &rhs.as_table(); // compare pointers for tables for now
         
     return false;
 }
@@ -321,7 +320,7 @@ inline bool operator==(const Value& lhs, const Value& rhs) {
     if (lhs.is_string())
         return lhs.as_string() == rhs.as_string();
     if (lhs.is_table())
-        return &lhs.as_table() == &rhs.as_table(); // Compare pointers for tables
+        return &lhs.as_table() == &rhs.as_table(); // compare pointers for tables for now
         
     return true;
 }

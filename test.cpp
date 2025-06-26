@@ -14,7 +14,7 @@ void test_simple_array() {
 }
 
 void test_nested_structure() {
-    // Create a table with nested array
+    // create a table with nested array
     Table inner_array(std::vector<Value>{1, 2, 3});
     std::map<Value, Value> map;
     map[Value("array")] = Value("test");
@@ -40,7 +40,7 @@ void test_empty_structures() {
 }
 
 void test_table_value() {
-    // Create a table with a nested table as a value
+    // create a table with a nested table as a value
     Table inner(std::vector<Value>{1, 2, 3});
     
     std::map<Value, Value> outer_map;
@@ -51,7 +51,7 @@ void test_table_value() {
     std::string serialized = outer.serialize();
     Table deserialized = Table::deserialize(serialized);
     
-    // Verify the structure
+    // test structure
     assert(!deserialized.get_is_array());
     Value& nested = deserialized[Value("nested")];
     assert(nested.is_table());
@@ -74,7 +74,7 @@ gun_active true // bool)";
     assert(data["player_name"].is_string() && data["player_name"].as_string() == "this person");
     assert(data["gun_active"].is_bool() && data["gun_active"].as_bool() == true);
 
-    // Test serialization
+    // test serialization
     std::map<std::string, Value> data_to_serialize;
     data_to_serialize["x"] = Value(0);
     data_to_serialize["y"] = Value(0.1f);
@@ -83,7 +83,7 @@ gun_active true // bool)";
 
     std::string serialized = serialize_to_netvent(Value("shoot"), data_to_serialize);
     
-    // Verify we can deserialize what we just serialized
+    // test deserialization
     auto [event2, data2] = deserialize_from_netvent(serialized);
     
     assert(event2.is_string() && event2.as_string() == "shoot");
@@ -92,7 +92,7 @@ gun_active true // bool)";
     assert(data2["player_name"].is_string() && data2["player_name"].as_string() == "this person");
     assert(data2["gun_active"].is_bool() && data2["gun_active"].as_bool() == true);
 
-    // Verify the exact format matches what we expect
+    // test against expected format
     std::string expected = R"("shoot"
 gun_active true
 player_name "this person"
@@ -103,7 +103,7 @@ y 0.1
 }
 
 void test_value_parsing() {
-    // Test number parsing
+    // test int/float parsing
     assert(Value::deserialize("42").is_int());
     assert(Value::deserialize("42").as_int() == 42);
     assert(Value::deserialize("42.0").is_float());
@@ -113,17 +113,17 @@ void test_value_parsing() {
     assert(Value::deserialize("-42.5").is_float());
     assert(Value::deserialize("-42.5").as_float() == -42.5f);
 
-    // Test boolean parsing
+    // test bool parsing
     assert(Value::deserialize("true").is_bool());
     assert(Value::deserialize("true").as_bool() == true);
     assert(Value::deserialize("false").is_bool());
     assert(Value::deserialize("false").as_bool() == false);
 
-    // Test string parsing
+    // test string parsing
     assert(Value::deserialize("\"hello\"").is_string());
     assert(Value::deserialize("\"hello\"").as_string() == "hello");
     
-    // Test table parsing
+    // test normal table parsing
     std::vector<Value> vec{1, 2, 3};
     Table t(vec);
     std::string table_str = t.serialize();
