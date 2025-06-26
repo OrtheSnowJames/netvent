@@ -1,0 +1,6 @@
+// comments can also be like this
+"shoot" // event name
+x 0 // int
+y 0.1 // float
+player_name "this person" // string
+gun_active true // bool
