@@ -135,8 +135,8 @@ gun_active true
 1. Comments:
 ```
 // this is a comment
-event_name // inline comment
-key value // another comment
+"event_value_name" // inline comment
+key "value" // another comment
 ```
 The format supports C-style line comments. It does NOT support multiline comments.
 

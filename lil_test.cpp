@@ -9,7 +9,7 @@ struct Vector2 {
 
     Value to_value() const {
         // serialize the vector2
-        return Value(Table({
+        return Value(map_table({
             {"x", x},
             {"y", y}
         }));

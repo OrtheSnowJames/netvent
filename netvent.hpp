@@ -60,7 +60,7 @@ class Value {
     };
 
 class Table {
-    // table is like lua table, it can be nested and can be array or object
+    // table is like lua table, it can be nested and can be array or objects
     private:
         std::map<Value, Value> data;
         bool is_array = false;
@@ -86,9 +86,25 @@ class Table {
                 data[Value(key)] = value;
             }
         }
+
+        void push_back(const Value& value) {
+            if (!is_array) throw std::runtime_error("Table is not an array");
+            data[Value(static_cast<int>(data.size()))] = value;
+        }
+
+        void push_back(const Value& key, const Value& value) {
+            if (is_array) throw std::runtime_error("Table is not an array");
+            data[Value(key)] = value;
+        }
+
         Value& operator[](const Value& key) {
             return data[key];
         }
+
+        bool exists(const Value& key) const {
+            return data.find(key) != data.end();
+        }
+
         bool get_is_array() const { return is_array; }
         std::variant<std::map<Value, Value>, std::vector<Value>> get_data() const {
             if (is_array) {
@@ -446,18 +462,5 @@ inline Table arr_table(std::initializer_list<Value> init) {
 inline Table map_table(std::initializer_list<std::pair<const char*, Value>> init) {
     return Table(init);
 }
-
-// example usage:
-// auto player = map_table({
-//     {"name", "John"},
-//     {"position", arr_table({10, 20})},
-//     {"health", 100},
-//     {"inventory", arr_table({
-//         map_table({{"item", "sword"}, {"damage", 15}}),
-//         map_table({{"item", "potion"}, {"healing", 20}})
-//     })}
-// });
-// std::string data = to_string(player);
-// Value restored = from_string(data);
 
 } // namespace netvent
